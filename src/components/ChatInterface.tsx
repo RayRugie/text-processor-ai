@@ -1,4 +1,3 @@
-// src/components/ChatInterface.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import Select from 'react-select';
 import { IoSend } from 'react-icons/io5';
@@ -38,7 +37,7 @@ const ChatInterface: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const detectLanguage = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const detectLanguage = async (e: React.ChangeEvent<HTMLTextAreaElement>): Promise<void> => {
     const text = e.target.value;
     setInputText(text);
     
