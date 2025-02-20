@@ -27,13 +27,13 @@ const ChatInterface: React.FC = () => {
   };
 
   useEffect(() => {
-    if ('ai' in self && 'languageDetector' in (self as any).ai) {
-      console.log("The Language Detector API is available.")
-    }  
+    // if ('ai' in self && 'languageDetector' in (self as any).ai) {
+    //   console.log("The Language Detector API is available.")
+    // }  
 
-    if ('ai' in self && 'translator' in (self as any).ai) {
-      alert("The Translator API is supported.")
-    }
+    // if ('ai' in self && 'translator' in (self as any).ai) {
+    //   alert("The Translator API is supported.")
+    // }
     scrollToBottom();
   }, [messages]);
 
