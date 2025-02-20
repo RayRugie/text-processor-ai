@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: inherit;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
   padding: 1.5rem;
@@ -390,6 +390,9 @@
 @media (max-width: 768px) {
   .chat-interface {
     padding: 0.75rem;
+    height: 100svh;
+    margin-left: -3.5%;
+    
 
     .messages-container {
       padding: 1rem;
@@ -444,7 +447,7 @@
       
       .input-field {
         padding: 0.75rem;
-        width: 100%;
+        width: 90%;
         font-size: 16px; /* Prevents iOS zoom on focus */
       }
       
