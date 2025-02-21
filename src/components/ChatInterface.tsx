@@ -21,6 +21,8 @@ const ChatInterface: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(languages[0]);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [summarizing, setSummarizing] = useState<Record<string, boolean>>({});
+  const [downloadProgress, setDownloadProgress] = useState<{ loaded: number; total: number } | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,6 +35,9 @@ const ChatInterface: React.FC = () => {
 
     // if ('ai' in self && 'translator' in (self as any).ai) {
     //   alert("The Translator API is supported.")
+    // }
+    // if ('ai' in self && 'summarizer' in self.ai) {
+    //   alert("The Summarizer API is supported.")
     // }
     scrollToBottom();
   }, [messages]);
@@ -116,8 +121,23 @@ const ChatInterface: React.FC = () => {
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
 
+    // Set summarizing state for this message
+    setSummarizing(prev => ({ ...prev, [messageId]: true }));
+    setError(null);
+    setDownloadProgress(null);
+
     try {
-      const summary = await summarizeText(messages[messageIndex].text);
+      const message = messages[messageIndex];
+      
+      // Create progress handler
+      const handleProgress = (e: { loaded: number; total: number }) => {
+        setDownloadProgress(e);
+      };
+
+      // Get summary
+      const summary = await TextProcessingService.summarizeText(message.text);
+      
+      // Update message with summary
       const updatedMessages = [...messages];
       updatedMessages[messageIndex] = {
         ...updatedMessages[messageIndex],
@@ -125,7 +145,11 @@ const ChatInterface: React.FC = () => {
       };
       setMessages(updatedMessages);
     } catch (error) {
-      setError('Failed to summarize text');
+      console.error('Summarization error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to summarize text');
+    } finally {
+      setSummarizing(prev => ({ ...prev, [messageId]: false }));
+      setDownloadProgress(null);
     }
   };
 
@@ -151,8 +175,11 @@ const ChatInterface: React.FC = () => {
       };
       setMessages(updatedMessages);
     } catch (error) {
-      console.error(error);
-      setError('Failed to translate text');
+      console.error('Summarization error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to summarize text');
+    } finally {
+      setSummarizing(prev => ({ ...prev, [messageId]: false }));
+      setDownloadProgress(null);
     }
   };
 
@@ -167,19 +194,38 @@ const ChatInterface: React.FC = () => {
             </p>
             
             {message.language === 'en' && message.text.length > 150 && (
-              <button
-                onClick={() => handleSummarize(message.id)}
-                className="action-button"
-                aria-label="Summarize text"
-              >
-                Summarize
-              </button>
+              <div className="summary-controls">
+                <button
+                  onClick={() => handleSummarize(message.id)}
+                  className={`action-button ${summarizing[message.id] ? 'loading' : ''}`}
+                  disabled={summarizing[message.id]}
+                  aria-label="Summarize text"
+                >
+                  {summarizing[message.id] ? 'Summarizing...' : 'Summarize'}
+                </button>
+                
+                {summarizing[message.id] && downloadProgress && (
+                  <div className="progress-bar">
+                    <div 
+                      className="progress"
+                      style={{ 
+                        width: `${(downloadProgress.loaded / downloadProgress.total) * 100}%` 
+                      }}
+                    />
+                    <span className="progress-text">
+                      {Math.round((downloadProgress.loaded / downloadProgress.total) * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
 
             {message.summary && (
               <div className="summary">
                 <h4>Summary:</h4>
-                <p>{message.summary}</p>
+                <div className="summary-content">
+                  {message.summary}
+                </div>
               </div>
             )}
 

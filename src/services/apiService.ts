@@ -31,27 +31,52 @@ export class TextProcessingService {
 
   // Placeholder summarization using basic algorithm
   // Since we don't have Google Cloud in browser
-  static async summarizeText(text: string): Promise<string> {
+  static async summarizeText(
+    text: string,
+    onProgress?: (progress: { loaded: number; total: number }) => void
+  ): Promise<string> {
     try {
-      // Simple summarization approach
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      
-      // If text is short, return it as-is
-      if (sentences.length <= 3) {
-        return text;
+      if (!('ai' in self) || !('summarizer' in (self as any).ai)) {
+        throw new Error('Chrome AI Summarizer API not available');
       }
+
+      const capabilities = await (self as any).ai.summarizer.capabilities();
       
-      // Select first and last sentences plus one from the middle
-      const summary = [
-        sentences[0],
-        sentences[Math.floor(sentences.length / 2)],
-        sentences[sentences.length - 1]
-      ].join('. ');
+      if (capabilities.available === 'no') {
+        throw new Error('Summarizer API is not usable on this device');
+      }
+
+      const options = {
+        type: 'key-points',
+        format: 'markdown',
+        length: 'medium',
+      };
+
+      let summarizer;
+      if (capabilities.available === 'readily') {
+        summarizer = await (self as any).ai.summarizer.create(options);
+      } else {
+        summarizer = await (self as any).ai.summarizer.create({
+          ...options,
+          monitor(m: any) {
+            if (onProgress) {
+              m.addEventListener('downloadprogress', onProgress);
+            }
+          },
+        });
+        await summarizer.ready;
+      }
+
+      const summary = await summarizer.summarize(text);
       
-      return summary || 'No summary available';
+      if (!summary || typeof summary !== 'string') {
+        throw new Error('Invalid summary response');
+      }
+
+      return summary;
     } catch (error) {
       console.error('Summarization error:', error);
-      throw new Error('Failed to summarize text');
+      throw error instanceof Error ? error : new Error('Failed to summarize text');
     }
   }
 
