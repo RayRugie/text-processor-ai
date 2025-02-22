@@ -29,16 +29,6 @@ const ChatInterface: React.FC = () => {
   };
 
   useEffect(() => {
-    // if ('ai' in self && 'languageDetector' in (self as any).ai) {
-    //   console.log("The Language Detector API is available.")
-    // }  
-
-    // if ('ai' in self && 'translator' in (self as any).ai) {
-    //   alert("The Translator API is supported.")
-    // }
-    // if ('ai' in self && 'summarizer' in self.ai) {
-    //   alert("The Summarizer API is supported.")
-    // }
     scrollToBottom();
   }, [messages]);
 
@@ -56,19 +46,19 @@ const ChatInterface: React.FC = () => {
       const canDetect = languageDetectorCapabilities.capabilities;
       let detector;
       if (canDetect === 'no') {
-        // The language detector isn't usable.
         console.log(null);
         return;
       }
       if (canDetect === 'readily') {
-        // The language detector can immediately be used.
         detector = await (self as any).ai.languageDetector.create();
       } else {
-        // The language detector can be used after model download.
         detector = await (self as any).ai.languageDetector.create({
           monitor(m: any) {
             m.addEventListener('downloadprogress', (e: any) => {
-              console.log(`Downloaded ${e.loaded} of ${e.total} bytes.`);
+              setDownloadProgress({ 
+                loaded: e.loaded, 
+                total: e.total 
+              });
             });
           },
         });
@@ -83,15 +73,6 @@ const ChatInterface: React.FC = () => {
     } catch (error) {
       console.error('Language Detection Error:', error);
       setError('Language detection failed');
-    }
-  };
-
-  const summarizeText = async (text: string): Promise<string> => {
-    try {
-      return await TextProcessingService.summarizeText(text);
-    } catch (error) {
-      setError('Summarization failed');
-      throw error;
     }
   };
 
@@ -121,23 +102,14 @@ const ChatInterface: React.FC = () => {
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
 
-    // Set summarizing state for this message
     setSummarizing(prev => ({ ...prev, [messageId]: true }));
     setError(null);
     setDownloadProgress(null);
 
     try {
       const message = messages[messageIndex];
-      
-      // Create progress handler
-      const handleProgress = (e: { loaded: number; total: number }) => {
-        setDownloadProgress(e);
-      };
-
-      // Get summary
       const summary = await TextProcessingService.summarizeText(message.text);
       
-      // Update message with summary
       const updatedMessages = [...messages];
       updatedMessages[messageIndex] = {
         ...updatedMessages[messageIndex],
@@ -175,11 +147,8 @@ const ChatInterface: React.FC = () => {
       };
       setMessages(updatedMessages);
     } catch (error) {
-      console.error('Summarization error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to summarize text');
-    } finally {
-      setSummarizing(prev => ({ ...prev, [messageId]: false }));
-      setDownloadProgress(null);
+      console.error('Translation error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to translate text');
     }
   };
 
